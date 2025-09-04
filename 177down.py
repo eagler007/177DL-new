@@ -35,10 +35,7 @@ for ch in '\\/:*?"<>|':
 save_dir = os.path.join('d:\\', comic_title, 'images')
 os.makedirs(save_dir, exist_ok=True)
 
-# =======================
 # 自动获取end_page
-# =======================
-# 方法1：通用，找分页数字
 pagination = soup.find('div', class_='page-links')
 end_page = 1
 if pagination:
@@ -47,8 +44,8 @@ if pagination:
     if page_numbers:
         end_page = max(page_numbers)
 else:
-    # 方法2：粗暴后备，正则页面内所有 /数字" 结构
-    numbers = re.findall(r'/(\d+)"', resp.text)
+    # 后备，正则页面内所有 /数字" 或 /数字/ 或 /数字> 结构
+    numbers = re.findall(r'/(\d+)[/">]', resp.text)
     if numbers:
         end_page = max([int(n) for n in numbers])
 
@@ -90,6 +87,12 @@ for page in range(start_page, end_page + 1):
 
         img_name = f"{img_count:03d}.jpg"
         img_path = os.path.join(save_dir, img_name)
+        # 断点续传：如果图片已经存在则跳过
+        if os.path.exists(img_path):
+            print(f"{img_name} 已存在，跳过。")
+            img_count += 1
+            continue
+
         try:
             print(f"下载 {img_name} : {img_url}")
             img_resp = requests.get(img_url, headers=headers, timeout=15)
@@ -101,3 +104,4 @@ for page in range(start_page, end_page + 1):
             print(f"图片下载失败: {img_url}，原因：{e}")
 
 print("全部图片下载完成，保存在：", save_dir)
+
